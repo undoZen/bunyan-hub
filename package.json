@@ -1,0 +1,28 @@
+{
+  "name": "bunyan-hub",
+  "version": "0.0.0",
+  "description": "centralised bunyan log aggregator using dnode protocol",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/undoZen/bunyan-hub.git"
+  },
+  "keywords": [
+    "bunyan",
+    "logging"
+  ],
+  "author": "undoZen <opensource@undozen.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/undoZen/bunyan-hub/issues"
+  },
+  "homepage": "https://github.com/undoZen/bunyan-hub",
+  "dependencies": {
+    "destroy": "^1.0.3",
+    "eventemitter3": "^0.1.6",
+    "xtend": "^4.0.0"
+  }
+}
