@@ -1,12 +1,12 @@
 {
   "name": "bunyan-hub",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "centralised bunyan log aggregator using dnode protocol",
   "main": "index.js",
   "files": [
-      "server.js",
-      "forever.js",
-      "cmd.js"
+    "server.js",
+    "forever.js",
+    "cmd.js"
   ],
   "bin": {
     "bunyan-hub": "cmd.js"
