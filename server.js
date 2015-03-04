@@ -94,7 +94,13 @@ var server = net.createServer(function (c) {
                 }
                 if (opts.readHistory) {
                     recordsFromLevel[lvl].forEach(function (rec) {
-                        remote.log(rec);
+                        if (opts.historyStartTime) {
+                            if (rec.time >= opts.historyStartTime) {
+                                remote.log(rec);
+                            }
+                        } else {
+                            remote.log(rec);
+                        }
                     });
                 }
                 historyDone = true;
