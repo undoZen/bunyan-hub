@@ -3,6 +3,14 @@
   "version": "0.0.1",
   "description": "centralised bunyan log aggregator using dnode protocol",
   "main": "index.js",
+  "files": [
+      "server.js",
+      "forever.js",
+      "cmd.js"
+  ],
+  "bin": {
+    "bunyan-hub": "cmd.js"
+  },
   "scripts": {
     "test": "node test/"
   },
@@ -21,9 +29,11 @@
   },
   "homepage": "https://github.com/undoZen/bunyan-hub",
   "dependencies": {
+    "bluebird": "^2.9.13",
     "destroy": "^1.0.3",
     "dnode": "^1.2.0",
     "eventemitter3": "^0.1.6",
+    "forever-monitor": "^1.5.2",
     "xtend": "^4.0.0"
   }
 }
