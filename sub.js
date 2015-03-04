@@ -5,11 +5,13 @@ var dnode = require('dnode');
 var destroy = require('destroy');
 
 var d = dnode({
-    log: console.log.bind(console),
+    log: function (rec) {
+        console.log(JSON.stringify(rec));
+    },
     getOptions: function (cb) {
         cb({
-            history: true,
-            level: 'fatal'
+            readHistory: true,
+            minLevel: 'fatal'
         });
     }
 });

@@ -23,6 +23,11 @@ var minValidRecord = {
     msg: 'msg'
 };
 d.on('remote', function (remote) {
+    if (typeof remote.version !== 'function') {
+        console.log('connected but can not get server version');
+        d.end();
+        return;
+    }
     remote.log(xtend(minValidRecord, {
         time: Date.now(),
         level: Math.floor(Math.random() * 6 + 1) * 10

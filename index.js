@@ -4,6 +4,7 @@ var dnode = require('dnode');
 var destroy = require('destroy');
 var EventEmitter = require('eventemitter3');
 var ee = new EventEmitter();
+var VERSION = require('./package.json').version;
 
 // records kept in memory;
 var RECORDS_LENGTH = 500;
@@ -65,6 +66,9 @@ function isValidRecord(rec) {
 var server = net.createServer(function (c) {
     var historyDone = false;
     var d = dnode({
+        version: function (cb) {
+            cb(VERSION);
+        },
         log: function (rec, cb) {
             if (isValidRecord(rec) && levelsFromLevel[rec.level]) {
                 levelsFromLevel[rec.level].forEach(function (lvl) {
@@ -73,44 +77,51 @@ var server = net.createServer(function (c) {
                     while (records.length > RECORDS_LENGTH) {
                         records.shift();
                     }
-                    ee.emit('record', rec);
                 });
+                ee.emit('record', rec);
             }
         }
     });
     d.on('remote', function (remote) {
-        var lvl = 30;
-        if (typeof remote.log === 'function') {
-            var recListener = function (rec) {
-                if (rec.level >= lvl) {
-                    remote.log(rec);
-                }
-            };
-            ee.on('record', recListener);
-            d.on('end', ee.removeListener.bind(ee, 'record', recListener));
-        }
         if (typeof remote.getOptions === 'function') {
             remote.getOptions(function (opts) {
-                var level = opts.level;
-                if (typeof opts.level === 'string') {
-                    level = levelFromName[opts.level.toLowerCase()];
+                var lvl = opts.minLevel;
+                if (typeof lvl === 'string') {
+                    lvl = levelFromName[lvl.toLowerCase()];
                 }
-                if (nameFromLevel[level]) {
-                    lvl = level;
+                if (!nameFromLevel[lvl]) { // make sure lvl value valid
+                    lvl = INFO;
                 }
-                if (opts.history) {
+                if (opts.readHistory) {
                     recordsFromLevel[lvl].forEach(function (rec) {
                         remote.log(rec);
                     });
                 }
                 historyDone = true;
+                addListener(lvl);
             });
         } else {
             historyDone = true;
+            addListener(INFO);
         }
+
+        function addListener(lvl) {
+            if (typeof remote.log === 'function') {
+                var recListener = function (rec) {
+                    if (rec.level >= lvl) {
+                        remote.log(rec);
+                    }
+                }
+                ee.on('record', recListener);
+                d.on('end', function () {
+                    ee.removeListener('record', recListener);
+                });
+            }
+        };
     });
     d.on('fail', console.log.bind(console, 'fail'));
-    d.on('error', console.log.bind(console, 'error'));
+    d.on('error',
+        console.log.bind(console, 'error'));
     d.on('end', function () {
         d.end();
         destroy(d);
