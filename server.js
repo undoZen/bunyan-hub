@@ -135,4 +135,5 @@ var server = net.createServer(function (c) {
     });
     c.pipe(d).pipe(c);
 });
-server.listen(28692); // 'BUNYA' on phone pad
+module.exports = server;
+server.records = recordsFromLevel;
