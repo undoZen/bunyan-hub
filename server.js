@@ -142,6 +142,3 @@ var server = net.createServer(function (c) {
 });
 module.exports = server;
 server.records = recordsFromLevel;
-if (require.main === module) {
-    server.listen(28692);
-}
