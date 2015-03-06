@@ -70,6 +70,11 @@ var server = net.createServer(function (c) {
             cb(VERSION);
         },
         log: function (rec, cb) {
+            if (typeof rec === 'string') {
+                try {
+                    rec = JSON.parse(rec);
+                } catch (e) {}
+            }
             if (isValidRecord(rec) && levelsFromLevel[rec.level]) {
                 levelsFromLevel[rec.level].forEach(function (lvl) {
                     var records = recordsFromLevel[lvl];
@@ -137,3 +142,6 @@ var server = net.createServer(function (c) {
 });
 module.exports = server;
 server.records = recordsFromLevel;
+if (require.main === module) {
+    server.listen(28692);
+}
