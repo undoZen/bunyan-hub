@@ -5,7 +5,6 @@
   "main": "index.js",
   "files": [
     "server.js",
-    "forever.js",
     "run.js",
     "cmd.js"
   ],
@@ -34,7 +33,6 @@
     "destroy": "^1.0.3",
     "dnode": "^1.2.0",
     "eventemitter3": "^0.1.6",
-    "forever-monitor": "^1.5.2",
     "xtend": "^4.0.0"
   }
 }

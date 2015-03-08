@@ -63,9 +63,42 @@ function isValidRecord(rec) {
     }
 }
 
+var openingConnections = [];
+
 var server = net.createServer(function (c) {
     var historyDone = false;
     var d = dnode({
+        reset: function (cb) {
+            recordsFromLevel = {
+                10: [],
+                20: [],
+                30: [],
+                40: [],
+                50: [],
+                60: [],
+            };
+            if (typeof cb === 'function') {
+                cb(true);
+            }
+        },
+        stop: function () {
+            process.on('message', function (msg) {
+                if (!msg || !msg.type) return;
+                if (msg.type === 'stopReady') {
+                    console.log('got stopReady');
+                    server.on('close', process.exit.bind(process, 0));
+                    server.on('close', console.log.bind(console,
+                        'closed'));
+                    server.close();
+                    openingConnections.forEach(function (oc) {
+                        oc.end();
+                    });
+                }
+            });
+            process.send({
+                type: 'stop'
+            });
+        },
         version: function (cb) {
             cb(VERSION);
         },
@@ -134,14 +167,29 @@ var server = net.createServer(function (c) {
     d.on('error',
         console.log.bind(console, 'error'));
     d.on('end', function () {
+        for (var oc, i = -1; oc = openingConnections[++i];) {
+            if (oc === c) {
+                openingConnections.splice(i, 1);
+                break;
+            }
+        }
         d.end();
         destroy(d);
         destroy(c);
     });
+    openingConnections.push(c);
     c.pipe(d).pipe(c);
 });
 module.exports = server;
 server.records = recordsFromLevel;
 if (require.main === module) {
+    process.on('message', function (msg) {
+        if (!msg) return;
+        if (msg.type === 'ping') {
+            process.send({
+                type: 'pong'
+            });
+        }
+    });
     server.listen(28692);
 }

@@ -8,6 +8,15 @@ var destroy = require('destroy');
 var spawn = require('child_process').spawn;
 global.Promise = require('bluebird');
 
+if (process.argv[2] === 'stop') {
+    var d = dnode();
+    d.on('remote', function (remote) {
+        remote.stop();
+    });
+    d.connect(28692);
+    return;
+}
+
 new Promise(function (resolve, reject) {
     var d = dnode();
     var listening;
@@ -44,7 +53,7 @@ new Promise(function (resolve, reject) {
 }).then(function (available) {
     if (available) {
         console.log('bunyan-hub will be started...');
-        spawn(process.execPath, [path.join(__dirname, 'forever.js')], {
+        spawn(process.execPath, [path.join(__dirname, 'run.js')], {
             cwd: __dirname,
             env: process.env,
             silent: true,
