@@ -9,7 +9,8 @@
     "cmd.js"
   ],
   "bin": {
-    "bunyan-hub": "cmd.js"
+    "bunyan-hub": "cmd.js",
+    "bunyanhub": "cmd.js"
   },
   "scripts": {
     "test": "node test/"
