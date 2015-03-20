@@ -1,4 +1,5 @@
 'use strict';
+global.Promise = require('bluebird');
 var net = require('net');
 var dnode = require('dnode');
 var destroy = require('destroy');
@@ -65,7 +66,88 @@ function isValidRecord(rec) {
 
 var openingConnections = [];
 
-var server = net.createServer(function (c) {
+var server = net.createServer({
+    allowHalfOpen: true
+}, function (socket) {
+    openingConnections.push(socket);
+    var _end = socket.end;
+    socket.end = function () {
+        for (var oc, i = -1; oc = openingConnections[++i];) {
+            if (oc === socket) {
+                openingConnections.splice(i, 1);
+                break;
+            }
+        }
+        process.nextTick(destroy.bind(null, socket));
+        return _end.apply(this, arguments);
+    };
+    var bufs = [];
+    var firstMsg = true;
+    socket.on('data', function (data) {
+        if (firstMsg) {
+            if (data.toString('utf-8')[0] !== '{') {
+                socket.removeAllListeners('end');
+                socket.end();
+            }
+            firstMsg = false;
+        }
+        bufs.push(data);
+    });
+    socket.on('end', function () {
+        var data = new Buffer(bufs.reduce(function (len, buf) {
+            return len + buf.length;
+        }, 0));
+        var index = 0;
+        bufs.forEach(function (buf) {
+            buf.copy(data, index);
+            index += buf.length;
+        });
+        var obj;
+        try {
+            obj = JSON.parse(data.toString('utf-8'));
+        } finally {
+            if (!obj || !obj.cmd) {
+                socket.end();
+                return;
+            }
+        }
+        run(obj);
+        //socket.end();
+    });
+
+    function run(obj) {
+        if (obj.cmd === 'version') {
+            socket.end(JSON.stringify({
+                version: VERSION
+            }));
+            return;
+        }
+        if (obj.cmd === 'reset') {
+            recordsFromLevel = {
+                10: [],
+                20: [],
+                30: [],
+                40: [],
+                50: [],
+                60: [],
+            };
+            socket.end(JSON.stringify({
+                reset: true
+            }));
+            return;
+        }
+        if (obj.cmd === 'stop') {
+            process.send({
+                type: 'stop'
+            });
+            socket.end(JSON.stringify({
+                stopped: true
+            }));
+            return;
+        }
+    }
+
+    return;
     var historyDone = false;
     var d = dnode({
         reset: function (cb) {
@@ -82,19 +164,6 @@ var server = net.createServer(function (c) {
             }
         },
         stop: function () {
-            process.on('message', function (msg) {
-                if (!msg || !msg.type) return;
-                if (msg.type === 'stopReady') {
-                    console.log('got stopReady');
-                    server.on('close', process.exit.bind(process, 0));
-                    server.on('close', console.log.bind(console,
-                        'closed'));
-                    server.close();
-                    openingConnections.forEach(function (oc) {
-                        oc.end();
-                    });
-                }
-            });
             process.send({
                 type: 'stop'
             });
@@ -133,7 +202,9 @@ var server = net.createServer(function (c) {
                 if (opts.readHistory) {
                     recordsFromLevel[lvl].forEach(function (rec) {
                         if (opts.historyStartTime) {
-                            if (rec.time >= opts.historyStartTime) {
+                            if ((new Date(rec.time)).valueOf() >=
+                                ((new Date(opts.historyStartTime))
+                                    .valueOf())) {
                                 remote.log(rec);
                             }
                         } else {
@@ -177,7 +248,6 @@ var server = net.createServer(function (c) {
         destroy(d);
         destroy(c);
     });
-    openingConnections.push(c);
     c.pipe(d).pipe(c);
 });
 module.exports = server;
@@ -191,5 +261,22 @@ if (require.main === module) {
             });
         }
     });
-    server.listen(28692);
+    process.on('message', function (msg) {
+        if (!msg || !msg.type) return;
+        if (msg.type === 'stopReady') {
+            console.log('got stopReady');
+            server.on('close', process.exit.bind(process, 0));
+            server.on('close', console.log.bind(console,
+                'closed'));
+            server.close();
+            openingConnections.forEach(function (oc) {
+                oc.end();
+            });
+        }
+    });
+    server.listen(28692, function () {
+        process.send({
+            type: 'pong'
+        });
+    });
 }
