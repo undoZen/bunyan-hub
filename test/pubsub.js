@@ -1,5 +1,4 @@
 'use strict';
-global.Promise = require('bluebird');
 var tape = require('tape');
 var co = require('co');
 var utils = require('./utils');

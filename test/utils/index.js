@@ -1,5 +1,4 @@
 'use strict';
-global.Promise = require('bluebird');
 var net = require('net');
 var run = require('../../run');
 var EventEmitter = require('eventemitter3');

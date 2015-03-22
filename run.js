@@ -1,15 +1,17 @@
 'use strict';
 var path = require('path');
 var fork = require('child_process').fork;
-global.Promise = require('bluebird');
 
 forkServer();
 
 function forkServer() {
     exports.stop = stop;
-    var d = Promise.defer();
-    exports.ready = d.promise;
-    var dResolved = false;
+    var ready = false;
+    var readyCb;
+    exports.ready = function (cb) { // for test
+        if (ready) cb(null);
+        else readyCb = cb;
+    };
 
     var child = fork(path.join(__dirname, 'server.js'), {
         cwd: __dirname,
@@ -34,9 +36,9 @@ function forkServer() {
         if (!msg || !msg.type) return;
         if (msg.type === 'pong') {
             pong = true;
-            if (!dResolved) {
-                d.resolve(true);
-                dResolved = true;
+            if (!ready) {
+                ready = true;
+                if (readyCb) readyCb(null);
             }
         } else if (msg.type === 'stop') {
             stop();

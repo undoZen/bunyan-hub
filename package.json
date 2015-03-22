@@ -30,7 +30,6 @@
   },
   "homepage": "https://github.com/undoZen/bunyan-hub",
   "dependencies": {
-    "bluebird": "^2.9.14",
     "destroy": "^1.0.3",
     "eventemitter3": "^0.1.6"
   },
