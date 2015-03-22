@@ -1,7 +1,7 @@
 {
   "name": "bunyan-hub",
   "version": "1.0.0-rc",
-  "description": "centralised bunyan log aggregator using dnode protocol",
+  "description": "centralised bunyan log aggregator through tcp",
   "main": "index.js",
   "files": [
     "server.js",
@@ -12,6 +12,7 @@
     "bunyan-hub": "cmd.js",
     "bunyanhub": "cmd.js"
   },
+  "preferGlobal": true,
   "scripts": {
     "test": "prove --exec node test/*.js"
   },
