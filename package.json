@@ -1,6 +1,6 @@
 {
   "name": "bunyan-hub",
-  "version": "0.5.0-beta",
+  "version": "1.0.0-rc",
   "description": "centralised bunyan log aggregator using dnode protocol",
   "main": "index.js",
   "files": [
