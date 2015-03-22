@@ -1,6 +1,6 @@
 {
   "name": "bunyan-hub",
-  "version": "0.4.1",
+  "version": "0.5.0-beta",
   "description": "centralised bunyan log aggregator using dnode protocol",
   "main": "index.js",
   "files": [
@@ -13,7 +13,7 @@
     "bunyanhub": "cmd.js"
   },
   "scripts": {
-    "test": "node test/"
+    "test": "prove --exec node test/*.js"
   },
   "repository": {
     "type": "git",
@@ -30,10 +30,12 @@
   },
   "homepage": "https://github.com/undoZen/bunyan-hub",
   "dependencies": {
-    "bluebird": "^2.9.13",
     "destroy": "^1.0.3",
-    "dnode": "^1.2.0",
-    "eventemitter3": "^0.1.6",
+    "eventemitter3": "^0.1.6"
+  },
+  "devDependencies": {
+    "co": "^4.5.1",
+    "tape": "^3.5.0",
     "xtend": "^4.0.0"
   }
 }
