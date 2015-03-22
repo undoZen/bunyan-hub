@@ -64,6 +64,21 @@ function isValidRecord(rec) {
     }
 }
 
+function addRec(rec) {
+    var json;
+    if (isValidRecord(rec) && levelsFromLevel[rec.level]) {
+        json = JSON.stringify(rec) + '\n';
+        levelsFromLevel[rec.level].forEach(function (lvl) {
+            var records = recordsFromLevel[lvl];
+            records.push(json);
+            while (records.length > RECORDS_LENGTH) {
+                records.shift();
+            }
+        });
+        ee.emit('record', rec.level, json);
+    }
+}
+
 var openingConnections = [];
 
 var server = net.createServer({
@@ -93,49 +108,49 @@ var server = net.createServer({
             }
             firstMsg = false;
         }
-        var index;
-        if ((index = data.indexOf(10)) === -1) {
-            bufs.push(data);
-            return;
-        }
-        var buf = Buffer.concat(bufs.concat([data.slice(0, index)]));
-        bufs.push(data.slice(index + 1));
-        var obj;
-        try {
-            obj = JSON.parse(buf.toString('utf-8'));
-        } finally {
-            if (firstJson) {
-                if (!obj) {
-                    socket.removeAllListeners('end');
-                    socket.end();
-                    return;
+        var index, buf, obj;
+        while ((index = data.indexOf(10)) > -1) {
+            buf = Buffer.concat(bufs.concat([data.slice(0, index)]));
+            data = data.slice(index + 1);
+            try {
+                obj = JSON.parse(buf.toString('utf-8'));
+            } finally {
+                if (firstJson) {
+                    if (!obj) {
+                        socket.removeAllListeners('end');
+                        socket.end();
+                        return;
+                    }
+                    firstJson = false;
+                    run(obj);
+                } else if (obj) {
+                    addRec(obj);
                 }
-                firstJson = false;
-                run(obj);
-            } else if (obj) {
-                addRec(obj);
             }
+        }
+        if (data.length) {
+            bufs.push(data);
         }
     });
     socket.on('end', function () {
-        if (!firstJson) return; // already run
         var data = Buffer.concat(bufs);
         var obj;
         try {
             obj = JSON.parse(data.toString('utf-8'));
         } finally {
-            if (!obj || !obj.cmd) {
+            if (!obj || (firstJson && !obj.cmd)) {
                 socket.end();
                 return;
             }
         }
-        run(obj);
+        if (firstJson) {
+            run(obj);
+        } else {
+            addRec(obj);
+        }
     });
 
     function run(obj) {
-        if (obj.cmd === 'publish') {
-            return; // do nothing
-        }
         if (obj.cmd === 'version') {
             socket.end(JSON.stringify({
                 version: VERSION
@@ -165,110 +180,44 @@ var server = net.createServer({
             }));
             return;
         }
+        if (obj.cmd === 'publish') {
+            return; // do nothing
+        }
+        if (obj.cmd === 'subscribe') {
+            subscribe(obj);
+            return;
+        }
     }
 
-    return;
-    var historyDone = false;
-    var d = dnode({
-        reset: function (cb) {
-            recordsFromLevel = {
-                10: [],
-                20: [],
-                30: [],
-                40: [],
-                50: [],
-                60: [],
-            };
-            if (typeof cb === 'function') {
-                cb(true);
-            }
-        },
-        stop: function () {
-            process.send({
-                type: 'stop'
-            });
-        },
-        version: function (cb) {
-            cb(VERSION);
-        },
-        log: function (rec, cb) {
-            if (typeof rec === 'string') {
-                try {
-                    rec = JSON.parse(rec);
-                } catch (e) {}
-            }
-            if (isValidRecord(rec) && levelsFromLevel[rec.level]) {
-                levelsFromLevel[rec.level].forEach(function (lvl) {
-                    var records = recordsFromLevel[lvl];
-                    records.push(rec);
-                    while (records.length > RECORDS_LENGTH) {
-                        records.shift();
-                    }
-                });
-                ee.emit('record', rec);
-            }
-        }
-    });
-    d.on('remote', function (remote) {
-        if (typeof remote.getOptions === 'function') {
-            remote.getOptions(function (opts) {
-                var lvl = opts.minLevel;
-                if (typeof lvl === 'string') {
-                    lvl = levelFromName[lvl.toLowerCase()];
-                }
-                if (!nameFromLevel[lvl]) { // make sure lvl value valid
-                    lvl = INFO;
-                }
-                if (opts.readHistory) {
-                    recordsFromLevel[lvl].forEach(function (rec) {
-                        if (opts.historyStartTime) {
-                            if ((new Date(rec.time)).valueOf() >=
-                                ((new Date(opts.historyStartTime))
-                                    .valueOf())) {
-                                remote.log(rec);
-                            }
-                        } else {
-                            remote.log(rec);
-                        }
-                    });
-                }
-                historyDone = true;
-                addListener(lvl);
-            });
-        } else {
-            historyDone = true;
-            addListener(INFO);
-        }
-
-        function addListener(lvl) {
-            if (typeof remote.log === 'function') {
-                var recListener = function (rec) {
-                    if (rec.level >= lvl) {
-                        remote.log(rec);
-                    }
-                }
-                ee.on('record', recListener);
-                d.on('end', function () {
-                    ee.removeListener('record', recListener);
-                });
+    function subscribe(opts) {
+        var lvl = levelsFromLevel[opts.level] ? ~~opts.level : 10;
+        var recListener = function (level, json) {
+            if (level >= lvl) {
+                socket.write(json);
             }
         };
-    });
-    d.on('fail', console.log.bind(console, 'fail'));
-    d.on('error',
-        console.log.bind(console, 'error'));
-    d.on('end', function () {
-        for (var oc, i = -1; oc = openingConnections[++i];) {
-            if (oc === c) {
-                openingConnections.splice(i, 1);
-                break;
+        if (opts.history) {
+            var time = parseInt(opts.time, 10);
+            if (isNaN(time)) time = false;
+            if (!time) {
+                socket.write(recordsFromLevel[lvl].join(''));
+            } else {
+                var historyLogs = recordsFromLevel[lvl]
+                    .filter(function (json) {
+                        if (((new Date(JSON.parse(json).time)).valueOf() >=
+                            ((new Date(time)).valueOf()))) {
+                            return true;
+                        }
+                        return false;
+                    });
+                if (historyLogs.length) {
+                    socket.write(historyLogs.join(''));
+                }
             }
         }
-        d.end();
-        destroy(d);
-        destroy(c);
-    });
-    c.pipe(d).pipe(c);
+        ee.on('record', recListener);
+        socket.on('end', ee.removeListener.bind(ee, 'record', recListener));
+    }
 });
 module.exports = server;
 server.records = recordsFromLevel;
