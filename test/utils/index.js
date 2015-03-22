@@ -33,14 +33,7 @@ exports.respond = function (socket) {
             bufs.push(data);
         });
         socket.on('end', function () {
-            var data = new Buffer(bufs.reduce(function (len, buf) {
-                return len + buf.length;
-            }, 0));
-            var index = 0;
-            bufs.forEach(function (buf) {
-                buf.copy(data, index);
-                index += buf.length;
-            });
+            var data = Buffer.concat(bufs);
             var obj;
             try {
                 obj = JSON.parse(data.toString('utf-8'));

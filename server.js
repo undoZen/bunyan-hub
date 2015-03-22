@@ -83,25 +83,43 @@ var server = net.createServer({
     };
     var bufs = [];
     var firstMsg = true;
+    var firstJson = true;
     socket.on('data', function (data) {
         if (firstMsg) {
             if (data.toString('utf-8')[0] !== '{') {
                 socket.removeAllListeners('end');
                 socket.end();
+                return;
             }
             firstMsg = false;
         }
-        bufs.push(data);
+        var index;
+        if ((index = data.indexOf(10)) === -1) {
+            bufs.push(data);
+            return;
+        }
+        var buf = Buffer.concat(bufs.concat([data.slice(0, index)]));
+        bufs.push(data.slice(index + 1));
+        var obj;
+        try {
+            obj = JSON.parse(buf.toString('utf-8'));
+        } finally {
+            if (firstJson) {
+                if (!obj) {
+                    socket.removeAllListeners('end');
+                    socket.end();
+                    return;
+                }
+                firstJson = false;
+                run(obj);
+            } else if (obj) {
+                addRec(obj);
+            }
+        }
     });
     socket.on('end', function () {
-        var data = new Buffer(bufs.reduce(function (len, buf) {
-            return len + buf.length;
-        }, 0));
-        var index = 0;
-        bufs.forEach(function (buf) {
-            buf.copy(data, index);
-            index += buf.length;
-        });
+        if (!firstJson) return; // already run
+        var data = Buffer.concat(bufs);
         var obj;
         try {
             obj = JSON.parse(data.toString('utf-8'));
@@ -112,10 +130,12 @@ var server = net.createServer({
             }
         }
         run(obj);
-        //socket.end();
     });
 
     function run(obj) {
+        if (obj.cmd === 'publish') {
+            return; // do nothing
+        }
         if (obj.cmd === 'version') {
             socket.end(JSON.stringify({
                 version: VERSION
