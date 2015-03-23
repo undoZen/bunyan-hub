@@ -79,9 +79,7 @@ function addRec(rec) {
 
 var openingConnections = [];
 
-var server = net.createServer({
-    allowHalfOpen: true
-}, function (socket) {
+var server = net.createServer(function (socket) {
     openingConnections.push(socket);
     var _end = socket.end;
     socket.end = function () {
