@@ -27,9 +27,10 @@ var rec3 = xtend(minValidRecord, {
     time: time0 + 3000,
 })
 
+var run = utils.run();
 tape('publish and subscribe to hub', co.wrap(function * (test) {
     test.plan(4);
-    yield utils.ready;
+    yield run.ready;
     var socket = yield utils.connect(28692);
     var sub = yield utils.connect(28692);
     var sub30 = yield utils.connect(28692);
@@ -102,7 +103,6 @@ tape('got history by level', co.wrap(function * (test) {
 
 tape('server could be stopped', co.wrap(function * (test) {
     test.plan(1);
-    yield utils.ready;
     var socket = yield utils.connect(28692);
     process.nextTick(socket.end.bind(socket, '{"cmd":"stop"}'));
     var obj = yield utils.respond(socket);

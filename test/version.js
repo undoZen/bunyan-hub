@@ -3,9 +3,10 @@ var tape = require('tape');
 var co = require('co');
 var utils = require('./utils');
 
+var run = utils.run();
 tape('get server version', co.wrap(function * (test) {
     test.plan(2);
-    yield utils.ready;
+    yield run.ready;
     var buf = new Buffer(0);
     var socket = yield utils.connect(28692);
     process.nextTick(socket.write.bind(socket,
@@ -18,7 +19,6 @@ tape('get server version', co.wrap(function * (test) {
 
 tape('server could be stopped', co.wrap(function * (test) {
     test.plan(1);
-    yield utils.ready;
     var buf = new Buffer(0);
     var socket = yield utils.connect(28692);
     process.nextTick(socket.end.bind(socket, '{"cmd":"stop"}'));
