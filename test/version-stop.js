@@ -2,6 +2,7 @@
 var tape = require('tape');
 var co = require('co');
 var utils = require('./utils');
+var net = require('net');
 
 var run = utils.run();
 tape('get server version', co.wrap(function * (test) {
@@ -21,7 +22,10 @@ tape('server could be stopped', co.wrap(function * (test) {
     test.plan(1);
     var buf = new Buffer(0);
     var socket = yield utils.connect(28692);
-    process.nextTick(socket.end.bind(socket, '{"cmd":"stop"}'));
-    var obj = yield utils.respond(socket);
-    test.ok(obj.stopped);
+    socket.end('{"cmd":"stop"}');
+    yield utils.sleep(500);
+    var socket = net.connect(28692);
+    socket.on('error', function (err) {
+        test.equal(err.code, 'ECONNREFUSED');
+    });
 }));

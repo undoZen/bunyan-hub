@@ -101,10 +101,7 @@ tape('got history by level', co.wrap(function * (test) {
     test.deepEqual(records[0], rec3);
 }));
 
-tape('server could be stopped', co.wrap(function * (test) {
+tape('stop server', co.wrap(function * (test) {
     test.plan(1);
-    var socket = yield utils.connect(28692);
-    process.nextTick(socket.end.bind(socket, '{"cmd":"stop"}'));
-    var obj = yield utils.respond(socket);
-    test.ok(obj.stopped);
+    run.stop(test);
 }));

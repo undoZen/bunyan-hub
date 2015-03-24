@@ -171,9 +171,7 @@ var server = net.createServer(function (socket) {
             process.send({
                 type: 'stop'
             });
-            socket.end(JSON.stringify({
-                stopped: true
-            }));
+            socket.end();
             return;
         }
         if (obj.cmd === 'publish') {
