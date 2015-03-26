@@ -35,7 +35,7 @@ function stop() {
 
 function start() {
     var socket = net.connect(28692, function () {
-        socket.end('{"cmd":"version"}');
+        socket.end('{"cmd":"version"}\n');
         var bufs = [];
         socket.on('data', bufs.push.bind(bufs));
         socket.on('end', function () {
@@ -44,7 +44,7 @@ function start() {
             try {
                 obj = JSON.parse(data.toString('utf-8'));
             } finally {
-                if (obj.version.match(/^\d+\.\d+\.\d+/)) {
+                if (obj && (obj.version || '').match(/^\d+\.\d+\.\d+/)) {
                     console.log('bunyan-hub already running.');
                 } else {
                     console.log(
