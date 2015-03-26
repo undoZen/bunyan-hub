@@ -107,6 +107,7 @@ var server = net.createServer(function (socket) {
         var index, buf, obj;
         while ((index = data.indexOf(10)) > -1) {
             buf = Buffer.concat(bufs.concat([data.slice(0, index)]));
+            bufs = [];
             data = data.slice(index + 1);
             try {
                 obj = JSON.parse(buf.toString('utf-8'));
