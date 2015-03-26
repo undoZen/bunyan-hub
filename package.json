@@ -1,6 +1,6 @@
 {
   "name": "bunyan-hub",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "centralised bunyan log aggregator through tcp",
   "main": "index.js",
   "files": [
