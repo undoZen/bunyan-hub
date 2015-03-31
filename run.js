@@ -13,7 +13,7 @@ function forkServer() {
         else readyCb = cb;
     };
 
-    var child = fork(path.join(__dirname, 'server.js'), {
+    var child = fork(path.join(__dirname, 'server.js'), ['--ping-pong'], {
         cwd: __dirname,
         env: process.env,
         execPath: process.execPath,

@@ -79,6 +79,7 @@ function addRec(rec) {
 
 var openingConnections = [];
 
+var pingPong = process.argv.indexOf('--ping-pong') > -1;
 var server = net.createServer(function (socket) {
     openingConnections.push(socket);
     var _end = socket.end;
@@ -169,9 +170,13 @@ var server = net.createServer(function (socket) {
             return;
         }
         if (obj.cmd === 'stop') {
-            process.send({
-                type: 'stop'
-            });
+            if (pingPong) {
+                process.send({
+                    type: 'stop'
+                });
+            } else {
+                stopServer();
+            }
             socket.end();
             return;
         }
@@ -216,7 +221,23 @@ var server = net.createServer(function (socket) {
 });
 module.exports = server;
 server.records = recordsFromLevel;
+
+function stopServer() {
+    server.on('close', process.exit.bind(process, 0));
+    server.on('close', console.log.bind(console, 'closed'));
+    server.close();
+    openingConnections.forEach(function (oc) {
+        oc.end();
+    });
+}
 if (require.main === module) {
+    server.listen(28692, function () {
+        if (!pingPong) return;
+        process.send({
+            type: 'pong'
+        });
+    });
+    if (!pingPong) return;
     process.on('message', function (msg) {
         if (!msg) return;
         if (msg.type === 'ping') {
@@ -229,18 +250,7 @@ if (require.main === module) {
         if (!msg || !msg.type) return;
         if (msg.type === 'stopReady') {
             console.log('got stopReady');
-            server.on('close', process.exit.bind(process, 0));
-            server.on('close', console.log.bind(console,
-                'closed'));
-            server.close();
-            openingConnections.forEach(function (oc) {
-                oc.end();
-            });
+            stopServer();
         }
-    });
-    server.listen(28692, function () {
-        process.send({
-            type: 'pong'
-        });
     });
 }
