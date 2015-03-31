@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 'use strict';
 var net = require('net');
 var destroy = require('destroy');

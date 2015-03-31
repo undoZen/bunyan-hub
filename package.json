@@ -9,6 +9,7 @@
     "cmd.js"
   ],
   "bin": {
+    "bunyan-hub-server": "server.js",
     "bunyan-hub": "cmd.js",
     "bunyanhub": "cmd.js"
   },

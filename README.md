@@ -21,6 +21,14 @@ bunyanhub start
 bunyanhub stop
 ```
 
+You can also run `bunyan-hub-server` directly, which is the same as run `node server.js` in source directory. So you can use pm2 as the process supervisor.
+
+```bash
+pm2 start --name bunyan-hub `which bunyan-hub-server`
+```
+
+Then you can only stop it by `pm2 stop bunyan-hub`, `bunyanhub stop` will stop the instance but immediately restarted by pm2.
+
 ## protocol
 once connected to localhost:28692 which bunyan-hub listening, you could write a JSON with `cmd` property ending with `\n` or FIN.
 
